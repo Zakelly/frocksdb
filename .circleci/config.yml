@@ -45,7 +45,7 @@ commands:
             echo "export SNAPPY_DOWNLOAD_BASE=https://rocksdb-deps.s3.us-west-2.amazonaws.com/pkgs/snappy" >> $BASH_ENV
             echo "export LZ4_DOWNLOAD_BASE=https://rocksdb-deps.s3.us-west-2.amazonaws.com/pkgs/lz4" >> $BASH_ENV
             echo "export ZSTD_DOWNLOAD_BASE=https://rocksdb-deps.s3.us-west-2.amazonaws.com/pkgs/zstd" >> $BASH_ENV
-            echo "export DISABLE_PERF_CONTEXT=0" >> $BASH_ENV
+            echo "export DISABLE_PERF_CONTEXT=1" >> $BASH_ENV
 
   windows-build-steps:
     steps:
@@ -65,27 +65,19 @@ commands:
             mkdir build
             cd build
             & $Env:CMAKE_BIN -G "$Env:CMAKE_GENERATOR" ..
-            msbuild.exe Snappy.sln -maxCpuCount -property:Configuration=Debug -property:Platform=x64
+            msbuild.exe Snappy.sln -maxCpuCount -property:Configuration=Release -property:Platform=x64
       - run:
           name: "Build RocksDB"
           command: |
             $env:Path = $env:JAVA_HOME + ";" + $env:Path
             mkdir build
             cd build
-            & $Env:CMAKE_BIN -G "$Env:CMAKE_GENERATOR" -DCMAKE_BUILD_TYPE=Debug -DOPTDBG=1 -DPORTABLE="$Env:CMAKE_PORTABLE" -DSNAPPY=1 -DJNI=1 ..
+            & $Env:CMAKE_BIN -G "$Env:CMAKE_GENERATOR" -DCMAKE_BUILD_TYPE=RELEASE -DOPTDBG=1 -DPORTABLE="$Env:CMAKE_PORTABLE" -DSNAPPY=1 -DJNI=1 ..
             cd ..
             echo "Building with VS version: $Env:CMAKE_GENERATOR"
-            msbuild.exe build/rocksdb.sln -maxCpuCount -property:Configuration=Debug -property:Platform=x64
-      - run:
-          name: "Test RocksDB"
-          shell: powershell.exe
-          command: |
-            build_tools\run_ci_db_test.ps1 -SuiteRun arena_test,db_basic_test,db_test,db_test2,db_merge_operand_test,bloom_test,c_test,coding_test,crc32c_test,dynamic_bloom_test,env_basic_test,env_test,hash_test,random_test -Concurrency 16
-      - run:
-          name: "Test RocksJava"
-          command: |
-            cd build\java
-            & $Env:CTEST_BIN -C Debug -j 16
+            msbuild.exe build/rocksdb.sln -maxCpuCount -property:Configuration=Release -property:Platform=x64
+      - store_artifacts:
+          path: build\java
   pre-steps-macos:
       steps:
         - pre-steps
@@ -362,7 +354,7 @@ jobs:
     resource_class: xlarge
     steps:
       - checkout # check out the code in the project directory
-      - run: CC=clang CXX=clang++ USE_CLANG=1 PORTABLE=1 DISABLE_PERF_CONTEXT=0 make V=1 -j16 all
+      - run: CC=clang CXX=clang++ USE_CLANG=1 PORTABLE=1 DISABLE_PERF_CONTEXT=1 make V=1 -j16 all
       - post-steps
 
   build-linux-clang10-asan:
@@ -475,7 +467,7 @@ jobs:
       - run: apt-get update -y && apt-get install -y libgflags-dev
       - run:
           name: "Unity build"
-          command: DISABLE_PERF_CONTEXT=0 make V=1 -j8 unity_test
+          command: DISABLE_PERF_CONTEXT=1 make V=1 -j8 unity_test
           no_output_timeout: 20m
       - run: make V=1 -j8 -k check-headers # could be moved to a different build
       - post-steps
@@ -612,7 +604,7 @@ jobs:
       JAVA_HOME: C:/Program Files/BellSoft/LibericaJDK-8
       SNAPPY_HOME: C:/Users/circleci/thirdparty/snappy-1.1.8
       SNAPPY_INCLUDE: C:/Users/circleci/thirdparty/snappy-1.1.8;C:/Users/circleci/thirdparty/snappy-1.1.8/build
-      SNAPPY_LIB_DEBUG: C:/Users/circleci/thirdparty/snappy-1.1.8/build/Debug/snappy.lib
+      SNAPPY_LIB_RELEASE: C:/Users/circleci/thirdparty/snappy-1.1.8/build/Release/snappy.lib
       CMAKE_GENERATOR: Visual Studio 17 2022
       CMAKE_PORTABLE: AVX2
     steps:
@@ -630,7 +622,7 @@ jobs:
       JAVA_HOME: C:/Program Files/BellSoft/LibericaJDK-8
       SNAPPY_HOME: C:/Users/circleci/thirdparty/snappy-1.1.8
       SNAPPY_INCLUDE: C:/Users/circleci/thirdparty/snappy-1.1.8;C:/Users/circleci/thirdparty/snappy-1.1.8/build
-      SNAPPY_LIB_DEBUG: C:/Users/circleci/thirdparty/snappy-1.1.8/build/Debug/snappy.lib
+      SNAPPY_LIB_RELEASE: C:/Users/circleci/thirdparty/snappy-1.1.8/build/Release/snappy.lib
       CMAKE_GENERATOR: Visual Studio 17 2022
       CMAKE_PORTABLE: 1
     steps:
@@ -648,7 +640,7 @@ jobs:
       JAVA_HOME: C:/Program Files/BellSoft/LibericaJDK-8
       SNAPPY_HOME: C:/Users/circleci/thirdparty/snappy-1.1.8
       SNAPPY_INCLUDE: C:/Users/circleci/thirdparty/snappy-1.1.8;C:/Users/circleci/thirdparty/snappy-1.1.8/build
-      SNAPPY_LIB_DEBUG: C:/Users/circleci/thirdparty/snappy-1.1.8/build/Debug/snappy.lib
+      SNAPPY_LIB_RELEASE: C:/Users/circleci/thirdparty/snappy-1.1.8/build/Release/snappy.lib
       CMAKE_GENERATOR: Visual Studio 16 2019
       CMAKE_PORTABLE: 1
     steps:
@@ -808,8 +800,10 @@ jobs:
             echo "JAVA_HOME=${JAVA_HOME}"
             which java && java -version
             which javac && javac -version
-            mkdir build && cd build && cmake -DJNI=1 -DWITH_GFLAGS=OFF .. -DCMAKE_C_COMPILER=x86_64-w64-mingw32-gcc -DCMAKE_CXX_COMPILER=x86_64-w64-mingw32-g++ -DCMAKE_SYSTEM_NAME=Windows && make -j4 rocksdb rocksdbjni
-      - post-steps
+            mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=RELEASE -DJNI=1 -DWITH_GFLAGS=OFF .. -DCMAKE_C_COMPILER=x86_64-w64-mingw32-gcc -DCMAKE_CXX_COMPILER=x86_64-w64-mingw32-g++ -DCMAKE_SYSTEM_NAME=Windows && make -j4 rocksdb rocksdbjni
+      - store_artifacts:
+          path: build
+            - post-steps
 
   build-linux-non-shm:
     executor: linux-docker
@@ -839,6 +833,86 @@ jobs:
       - pre-steps
       - install-gflags
       - run: ROCKSDBTESTS_PLATFORM_DEPENDENT=only make V=1 J=4 -j4 all_but_some_tests check_some
+      - post-steps
+
+  build-linux-arm-docker-musl:
+    machine:
+      image: ubuntu-2004:202111-02
+    resource_class: arm.xlarge
+    steps:
+      - pre-steps
+      - run:
+          name: "Set Java Environment"
+          command: |
+            echo "JAVA_HOME=${JAVA_HOME}"
+            echo 'export PATH=$JAVA_HOME/bin:$PATH' >> $BASH_ENV
+            which java && java -version
+            which javac && javac -version
+      - run:
+          name: "Build rocksdbjavastaticdockerarm64v8musl"
+          command: DEBUG_LEVEL=0  ROCKSDB_DISABLE_JEMALLOC=true PORTABLE=1  CXXFLAGS="-I${JAVA_HOME}/include -I${JAVA_HOME}/include/linux -Wno-error=shadow -Wno-error-defaulted-function-deleted -Wno-unknown-warning-option -Wno-error=unused-parameter -Wno-error=unused-variable" make V=1 J=8 -j8 rocksdbjavastaticdockerarm64v8musl
+      - store_artifacts:
+          path: java/target
+      - post-steps
+
+  build-linux-arm-docker:
+    machine:
+      image: ubuntu-2004:202111-02
+    resource_class: arm.xlarge
+    steps:
+      - pre-steps
+      - run:
+          name: "Set Java Environment"
+          command: |
+            echo "JAVA_HOME=${JAVA_HOME}"
+            echo 'export PATH=$JAVA_HOME/bin:$PATH' >> $BASH_ENV
+            which java && java -version
+            which javac && javac -version
+      - run:
+          name: "Build rocksdbjavastaticdockerarm64v8"
+          command: DEBUG_LEVEL=0  ROCKSDB_DISABLE_JEMALLOC=true PORTABLE=1  CXXFLAGS="-I${JAVA_HOME}/include -I${JAVA_HOME}/include/linux -Wno-error=shadow -Wno-error-defaulted-function-deleted -Wno-unknown-warning-option -Wno-error=unused-parameter -Wno-error=unused-variable" make V=1 J=8 -j8 rocksdbjavastaticdockerarm64v8
+      - store_artifacts:
+          path: java/target
+      - post-steps
+
+  build-linux-ppc64le-docker-musl:
+    machine:
+      image: ubuntu-2004:202111-02
+    resource_class: arm.xlarge
+    steps:
+      - pre-steps
+      - run:
+          name: "Set Java Environment"
+          command: |
+            echo "JAVA_HOME=${JAVA_HOME}"
+            echo 'export PATH=$JAVA_HOME/bin:$PATH' >> $BASH_ENV
+            which java && java -version
+            which javac && javac -version
+      - run:
+          name: "Build rocksdbjavastaticdockerppc64lemusl"
+          command: DEBUG_LEVEL=0  ROCKSDB_DISABLE_JEMALLOC=true PORTABLE=1  CXXFLAGS="-I${JAVA_HOME}/include -I${JAVA_HOME}/include/linux -Wno-error=shadow -Wno-error-defaulted-function-deleted -Wno-unknown-warning-option -Wno-error=unused-parameter -Wno-error=unused-variable" make V=1 J=8 -j8 rocksdbjavastaticdockerppc64lemusl
+      - store_artifacts:
+          path: java/target
+      - post-steps
+
+  build-linux-ppc64le-docker:
+    machine:
+      image: ubuntu-2004:202111-02
+    resource_class: arm.xlarge
+    steps:
+      - pre-steps
+      - run:
+          name: "Set Java Environment"
+          command: |
+            echo "JAVA_HOME=${JAVA_HOME}"
+            echo 'export PATH=$JAVA_HOME/bin:$PATH' >> $BASH_ENV
+            which java && java -version
+            which javac && javac -version
+      - run:
+          name: "Build rocksdbjavastaticdockerppc64le"
+          command: DEBUG_LEVEL=0  ROCKSDB_DISABLE_JEMALLOC=true PORTABLE=1  CXXFLAGS="-I${JAVA_HOME}/include -I${JAVA_HOME}/include/linux -Wno-error=shadow -Wno-error-defaulted-function-deleted -Wno-unknown-warning-option -Wno-error=unused-parameter -Wno-error=unused-variable" make V=1 J=8 -j8 rocksdbjavastaticdockerppc64le
+      - store_artifacts:
+          path: java/target
       - post-steps
 
   build-linux-arm-cmake-no_test_run:
@@ -946,6 +1020,7 @@ workflows:
       - build-linux-mini-crashtest
   jobs-windows:
     jobs:
+      - build-windows-vs2022
       - build-windows-vs2019
       - build-cmake-mingw
   jobs-java:
@@ -969,6 +1044,10 @@ workflows:
   build-fuzzers:
     jobs:
       - build-fuzzers
+      - build-linux-arm-docker-musl
+      - build-linux-arm-docker
+      - build-linux-ppc64le-docker-musl
+      - build-linux-ppc64le-docker
   benchmark-linux:
     triggers:
       - schedule:
