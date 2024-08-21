@@ -65,7 +65,7 @@ commands:
             mkdir build
             cd build
             & $Env:CMAKE_BIN -G "$Env:CMAKE_GENERATOR" ..
-            msbuild.exe Snappy.sln -maxCpuCount -property:Configuration=Debug -property:Platform=x64
+            msbuild.exe Snappy.sln -maxCpuCount -property:Configuration=Release -property:Platform=x64
       - run:
           name: "Build RocksDB"
           command: |
@@ -75,7 +75,7 @@ commands:
             & $Env:CMAKE_BIN -G "$Env:CMAKE_GENERATOR" -DCMAKE_BUILD_TYPE=RELEASE -DOPTDBG=1 -DPORTABLE="$Env:CMAKE_PORTABLE" -DSNAPPY=1 -DJNI=1 ..
             cd ..
             echo "Building with VS version: $Env:CMAKE_GENERATOR"
-            msbuild.exe build/rocksdb.sln -maxCpuCount -property:Configuration=Debug -property:Platform=x64
+            msbuild.exe build/rocksdb.sln -maxCpuCount -property:Configuration=Release -property:Platform=x64
       - run:
           name: "Test RocksDB"
           shell: powershell.exe
@@ -879,8 +879,9 @@ jobs:
       - post-steps
 
   build-linux-ppc64le-docker-musl:
-    executor: linux-docker
-    resource_class: large
+    machine:
+      image: ubuntu-2004:202111-02
+    resource_class: arm.xlarge
     steps:
       - pre-steps
       - run:
@@ -890,10 +891,6 @@ jobs:
             echo 'export PATH=$JAVA_HOME/bin:$PATH' >> $BASH_ENV
             which java && java -version
             which javac && javac -version
-      # No need to manually build the Docker image, use the existing Dockerfile
-      - setup_remote_docker:
-          version: 20.10.7
-          docker_layer_caching: true
       - run:
           name: "Build rocksdbjavastaticdockerppc64lemusl"
           command: DEBUG_LEVEL=0  ROCKSDB_DISABLE_JEMALLOC=true PORTABLE=1  CXXFLAGS="-I${JAVA_HOME}/include -I${JAVA_HOME}/include/linux -Wno-error=shadow -Wno-error-defaulted-function-deleted -Wno-unknown-warning-option -Wno-error=unused-parameter -Wno-error=unused-variable" make V=1 J=8 -j8 rocksdbjavastaticdockerppc64lemusl
@@ -902,8 +899,9 @@ jobs:
       - post-steps
 
   build-linux-ppc64le-docker:
-    executor: linux-docker
-    resource_class: large
+    machine:
+      image: ubuntu-2004:202111-02
+    resource_class: arm.xlarge
     steps:
       - pre-steps
       - run:
@@ -913,10 +911,6 @@ jobs:
             echo 'export PATH=$JAVA_HOME/bin:$PATH' >> $BASH_ENV
             which java && java -version
             which javac && javac -version
-      # No need to manually build the Docker image, use the existing Dockerfile
-      - setup_remote_docker:
-          version: 20.10.7
-          docker_layer_caching: true
       - run:
           name: "Build rocksdbjavastaticdockerppc64le"
           command: DEBUG_LEVEL=0  ROCKSDB_DISABLE_JEMALLOC=true PORTABLE=1  CXXFLAGS="-I${JAVA_HOME}/include -I${JAVA_HOME}/include/linux -Wno-error=shadow -Wno-error-defaulted-function-deleted -Wno-unknown-warning-option -Wno-error=unused-parameter -Wno-error=unused-variable" make V=1 J=8 -j8 rocksdbjavastaticdockerppc64le
