@@ -65,17 +65,27 @@ commands:
             mkdir build
             cd build
             & $Env:CMAKE_BIN -G "$Env:CMAKE_GENERATOR" ..
-            msbuild.exe Snappy.sln -maxCpuCount -property:Configuration=Release -property:Platform=x64
+            msbuild.exe Snappy.sln -maxCpuCount -property:Configuration=Debug -property:Platform=x64
       - run:
           name: "Build RocksDB"
           command: |
             $env:Path = $env:JAVA_HOME + ";" + $env:Path
             mkdir build
             cd build
-            & $Env:CMAKE_BIN -G "$Env:CMAKE_GENERATOR" -DCMAKE_BUILD_TYPE=RELEASE -DOPTDBG=1 -DPORTABLE="$Env:CMAKE_PORTABLE" -DSNAPPY=1 -DJNI=1 ..
+            & $Env:CMAKE_BIN -G "$Env:CMAKE_GENERATOR" -DCMAKE_BUILD_TYPE=DEBUG -DOPTDBG=1 -DPORTABLE="$Env:CMAKE_PORTABLE" -DSNAPPY=1 -DJNI=1 ..
             cd ..
             echo "Building with VS version: $Env:CMAKE_GENERATOR"
-            msbuild.exe build/rocksdb.sln -maxCpuCount -property:Configuration=Release -property:Platform=x64
+            msbuild.exe build/rocksdb.sln -maxCpuCount -property:Configuration=Debug -property:Platform=x64
+      - run:
+          name: "Test RocksDB"
+          shell: powershell.exe
+          command: |
+            build_tools\run_ci_db_test.ps1 -SuiteRun arena_test,db_basic_test,db_test,db_test2,db_merge_operand_test,bloom_test,c_test,coding_test,crc32c_test,dynamic_bloom_test,env_basic_test,env_test,hash_test,random_test -Concurrency 16
+      - run:
+          name: "Test RocksJava"
+          command: |
+            cd build\java
+            & $Env:CTEST_BIN -C Debug -j 16
       - store_artifacts:
           path: build\java
   pre-steps-macos:
@@ -604,6 +614,7 @@ jobs:
       JAVA_HOME: C:/Program Files/BellSoft/LibericaJDK-8
       SNAPPY_HOME: C:/Users/circleci/thirdparty/snappy-1.1.8
       SNAPPY_INCLUDE: C:/Users/circleci/thirdparty/snappy-1.1.8;C:/Users/circleci/thirdparty/snappy-1.1.8/build
+      SNAPPY_LIB_DEBUG: C:/Users/circleci/thirdparty/snappy-1.1.8/build/Debug/snappy.lib
       SNAPPY_LIB_RELEASE: C:/Users/circleci/thirdparty/snappy-1.1.8/build/Release/snappy.lib
       CMAKE_GENERATOR: Visual Studio 17 2022
       CMAKE_PORTABLE: AVX2
@@ -622,6 +633,7 @@ jobs:
       JAVA_HOME: C:/Program Files/BellSoft/LibericaJDK-8
       SNAPPY_HOME: C:/Users/circleci/thirdparty/snappy-1.1.8
       SNAPPY_INCLUDE: C:/Users/circleci/thirdparty/snappy-1.1.8;C:/Users/circleci/thirdparty/snappy-1.1.8/build
+      SNAPPY_LIB_DEBUG: C:/Users/circleci/thirdparty/snappy-1.1.8/build/Debug/snappy.lib
       SNAPPY_LIB_RELEASE: C:/Users/circleci/thirdparty/snappy-1.1.8/build/Release/snappy.lib
       CMAKE_GENERATOR: Visual Studio 17 2022
       CMAKE_PORTABLE: 1
@@ -640,6 +652,7 @@ jobs:
       JAVA_HOME: C:/Program Files/BellSoft/LibericaJDK-8
       SNAPPY_HOME: C:/Users/circleci/thirdparty/snappy-1.1.8
       SNAPPY_INCLUDE: C:/Users/circleci/thirdparty/snappy-1.1.8;C:/Users/circleci/thirdparty/snappy-1.1.8/build
+      SNAPPY_LIB_DEBUG: C:/Users/circleci/thirdparty/snappy-1.1.8/build/Debug/snappy.lib
       SNAPPY_LIB_RELEASE: C:/Users/circleci/thirdparty/snappy-1.1.8/build/Release/snappy.lib
       CMAKE_GENERATOR: Visual Studio 16 2019
       CMAKE_PORTABLE: 1
