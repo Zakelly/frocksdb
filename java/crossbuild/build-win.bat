@@ -3,7 +3,7 @@
 set MSBUILD=C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\MSBuild\15.0\Bin\MSBuild.exe
 
 if exist build rd /s /q build
-if exist librocksdbjni-win64.dll del librocksdbjni-win64.dll
+if exist libforstjni-win64.dll del libforstjni-win64.dll
 mkdir build && cd build
 
 cmake -G "Visual Studio 15 Win64" -DWITH_JNI=1 ..
@@ -12,5 +12,5 @@ cmake -G "Visual Studio 15 Win64" -DWITH_JNI=1 ..
 
 cd ..
 
-copy build\java\Release\rocksdbjni-shared.dll librocksdbjni-win64.dll
-echo Result is in librocksdbjni-win64.dll
+copy build\java\Release\forstjni-shared.dll libforstjni-win64.dll
+echo Result is in libforstjni-win64.dll
