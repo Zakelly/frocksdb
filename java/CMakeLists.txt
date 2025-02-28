@@ -230,6 +230,7 @@ set(JAVA_MAIN_CLASSES
         src/main/java/org/forstdb/ReusedSynchronisationType.java
         src/main/java/org/forstdb/RocksCallbackObject.java
         src/main/java/org/forstdb/RocksDBException.java
+        src/main/java/org/forstdb/RocksDBShutdownHook.java
         src/main/java/org/forstdb/RocksDB.java
         src/main/java/org/forstdb/RocksEnv.java
         src/main/java/org/forstdb/RocksIteratorInterface.java
@@ -716,6 +717,7 @@ if(${CMAKE_VERSION} VERSION_LESS "3.11.4")
           org.forstdb.RemoveEmptyValueCompactionFilter
           org.forstdb.RestoreOptions
           org.forstdb.RocksCallbackObject
+          org.forstdb.RocksDBShutdownHook
           org.forstdb.RocksDB
           org.forstdb.RocksEnv
           org.forstdb.RocksIterator
